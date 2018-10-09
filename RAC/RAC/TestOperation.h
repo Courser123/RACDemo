@@ -11,3 +11,7 @@
 @interface TestOperation : NSOperation
 
 @end
+
+@interface TestOperationQueue : NSOperationQueue
+
+@end

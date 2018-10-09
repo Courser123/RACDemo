@@ -1,5 +1,5 @@
 //
-//  RACCancelProtocol.h
+//  UGCRequestProtocol.h
 //  RAC
 //
 //  Created by Courser on 2018/9/20.
@@ -7,11 +7,11 @@
 //
 
 #import <Foundation/Foundation.h>
-@class RACCustom;
+@class UGCRequest;
 
-@protocol RACCancelProtocol <NSObject>
+@protocol UGCRequestProtocol <NSObject>
 
-- (void)cancelCustom:(RACCustom *)custom;
+- (void)cancelRequest:(UGCRequest *)request;
 
 @end
 

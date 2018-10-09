@@ -1,17 +1,17 @@
 //
-//  RACCustom.m
+//  UGCRequest.m
 //  RAC
 //
 //  Created by Courser on 2018/9/10.
 //  Copyright © 2018 王忠迪. All rights reserved.
 //
 
-#import "RACCustom.h"
+#import "UGCRequest.h"
 
 #import <objc/runtime.h>
-#import "RACCancelProtocol.h"
+#import "UGCRequestProtocol.h"
 
-@interface RACCustom ()
+@interface UGCRequest ()
 
 @property (nonatomic, readonly, strong) RACSubject *subject;
 @property (nonatomic, readonly, strong) RACCommand *command;
@@ -19,16 +19,18 @@
 @property (assign, nonatomic, getter = isFinished) BOOL finished;
 @property (assign, nonatomic, getter=isCancelled) BOOL cancelled;
 @property (nonatomic, strong) RACDisposable *disposable;
+@property (nonatomic, assign) NSString *test;
+@property (nonatomic, assign) BOOL internalCancelled;
 
 @end
 
-@implementation RACCustom {
+@implementation UGCRequest {
     RACSubject *_subject;
 }
 
 - (instancetype)init {
     if (self = [super init]) {
-        _queuePriority = NSOperationQueuePriorityNormal;
+        _queuePriority = UGCRequestQueuePriorityNormal;
         _executing = NO;
         _finished = NO;
     }
@@ -43,7 +45,7 @@
         return [RACSignal createSignal:^RACDisposable * _Nullable(id<RACSubscriber>  _Nonnull subscriber) {
             
             if ([input isKindOfClass:[NSURL class]]) {
-                dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.1 * NSEC_PER_SEC)), dispatch_get_global_queue(0, 0), ^{
+                dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.01 * NSEC_PER_SEC)), dispatch_get_global_queue(0, 0), ^{
                     [subscriber sendNext:((NSURL *)input).absoluteString];
                     [subscriber sendCompleted];
                 });
@@ -64,29 +66,29 @@
             @strongify(self)
             self.executing = NO;
             self.finished = YES;
-            NSLog(@"%@",x);
+            NSLog(@"done:%@ , queuePriority:%ld",x, self.queuePriority);
+            self.test = x;
         } error:^(NSError * _Nullable error) {
             @strongify(self)
             self.executing = NO;
             self.finished = YES;
-            NSLog(@"%@",error);
+            NSLog(@"error:%@",error);
         }];
     }
     return _subject;
 }
 
 - (void)cancel {
-    [[RACScheduler mainThreadScheduler] schedule:^{
-        self.cancelled = YES;
-        id <RACCancelProtocol> delegate = objc_getAssociatedObject(self, "delegate");
-        if ([delegate respondsToSelector:@selector(cancelCustom:)]) {
-            [delegate cancelCustom:self];
-        }
-    }];
+    self.cancelled = YES;
+    NSLog(@"+++ cancel:%@ +++",self.url.absoluteString);
+    id <UGCRequestProtocol> delegate = objc_getAssociatedObject(self, "delegate");
+    if ([delegate respondsToSelector:@selector(cancelRequest:)]) {
+        [delegate cancelRequest:self];
+    }
 }
 
 - (void)dealloc {
-    NSLog(@"++++++ dealloc ++++++");
+    NSLog(@"++++++ dealloc:%@ ++++++",self.url.absoluteString);
 }
 
 @end
