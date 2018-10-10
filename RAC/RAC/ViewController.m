@@ -26,20 +26,9 @@
 - (void)viewDidLoad {
     [super viewDidLoad];
     // Do any additional setup after loading the view, typically from a nib.
-    
-    self.queue = [[UGCRequestQueue alloc] init];
-    self.operationQueue = [[NSOperationQueue alloc] init];
-//    self.queue.maxConcurrentOperationCount = 10;
-//    for (int i = 0 ; i < 100; i ++) {
-//        RACCustom *custom = [[RACCustom alloc] init];
-//        custom.url = [NSURL URLWithString:[NSString stringWithFormat:@"%d",i]];
-//        [self.queue addCustom:custom];
-//        dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.5 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
-//            [custom cancel];
-//        });
-//    }
-//    NSOperationQueue *queue = [NSOperationQueue new];
-//    NSLog(@"%ld",queue.maxConcurrentOperationCount);
+    UGCRequestQueueOptions *options = [UGCRequestQueueOptions new];
+//    options.executionOrder = RequestLIFOExecutionOrder;
+    self.queue = [[UGCRequestQueue alloc] initWithUGCRequestQueueOptions:options];
     
 }
 
