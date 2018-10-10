@@ -10,21 +10,21 @@
 #import "ReactiveObjC.h"
 @class UGCRequest;
 
-typedef NS_ENUM(NSInteger, RequestExecutionOrder) {
+typedef NS_ENUM(NSInteger, UGCRequestExecutionOrder) {
     /**
      * Default value. All download operations will execute in queue style (first-in-first-out).
      */
-    RequestFIFOExecutionOrder,
+    UGCRequestFIFOExecutionOrder,
     
     /**
      * All download operations will execute in stack style (last-in-first-out).
      */
-    RequestLIFOExecutionOrder
+    UGCRequestLIFOExecutionOrder
 };
 
 @interface UGCRequestQueueOptions : NSObject
 
-@property (nonatomic, assign) RequestExecutionOrder executionOrder;
+@property (nonatomic, assign) UGCRequestExecutionOrder executionOrder;
 @property NSInteger maxConcurrentOperationCount; // default value is 6
 
 @end
@@ -37,10 +37,5 @@ typedef NS_ENUM(NSInteger, RequestExecutionOrder) {
 
 - (RACSubject *)addRequest:(UGCRequest *)request;
 
-//// 检查UGCRequestQueue是否有内存泄漏
-//- (void)_addRequest:(UGCRequest *)request; // 测试方法
-//
-//@property (nonatomic, strong) NSMutableDictionary <NSNumber *, NSMutableArray *> *priorityDict;
-//@property (nonatomic, strong) NSMutableArray <UGCRequest *> *executingRequest;
 
 @end

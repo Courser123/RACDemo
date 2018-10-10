@@ -8,7 +8,6 @@
 
 #import "ViewController.h"
 #import "ReactiveObjC.h"
-#import "TestOperation.h"
 #import "UGCRequest.h"
 #import "UGCRequestQueue.h"
 
@@ -33,7 +32,6 @@
 }
 
 - (void)touchesBegan:(NSSet<UITouch *> *)touches withEvent:(UIEvent *)event {
-//    [self testOperation];
     [self test];
 }
 
@@ -71,18 +69,6 @@
 //    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(1.0 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
 //        self.queue.suspended = NO;
 //    });
-}
-
-- (void)testOperation {
-    for (int i = 0; i < 10000; i++) {
-        TestOperation *operation = [[TestOperation alloc] init];
-        if (i % 2 == 0) {
-            self.operationQueue.maxConcurrentOperationCount = 8;
-        }else {
-            self.operationQueue.maxConcurrentOperationCount = 4;
-        }
-        [self.operationQueue addOperation:operation];
-    }
 }
 
 - (void)didReceiveMemoryWarning {

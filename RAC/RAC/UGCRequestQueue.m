@@ -18,7 +18,7 @@
 
 - (instancetype)init {
     if (self = [super init]) {
-        _executionOrder = RequestFIFOExecutionOrder;
+        _executionOrder = UGCRequestFIFOExecutionOrder;
         _maxConcurrentOperationCount = 6;
     }
     return self;
@@ -97,7 +97,7 @@
 @property (nonatomic, strong) NSLock *executionLock;
 @property (nonatomic, strong) RACScheduler *controlScheduler;
 @property (nonatomic, strong) RACScheduler *downloadScheduler;
-@property (nonatomic, assign) RequestExecutionOrder executionOrder;
+@property (nonatomic, assign) UGCRequestExecutionOrder executionOrder;
 
 @end
 
@@ -221,7 +221,7 @@
             request.internalQueuePriority = request.queuePriority;
             [[self.priorityDict objectForKey:[change objectForKey:@"old"]] removeObject:request];
             NSMutableArray *array = [self.priorityDict objectForKey:@(request.queuePriority)];
-            if (self.executionOrder == RequestFIFOExecutionOrder) {
+            if (self.executionOrder == UGCRequestFIFOExecutionOrder) {
                 [array addObject:request];
             }else {
                 [array insertObject:request atIndex:0];
@@ -231,7 +231,7 @@
     }];
     [self.lock lock];
     NSMutableArray *array = [self.priorityDict objectForKey:@(request.internalQueuePriority)];
-    if (self.executionOrder == RequestFIFOExecutionOrder) {
+    if (self.executionOrder == UGCRequestFIFOExecutionOrder) {
         [array addObject:request];
     }else {
         [array insertObject:request atIndex:0];
