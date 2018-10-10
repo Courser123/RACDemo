@@ -26,11 +26,75 @@
 
 @end
 
+@interface UGCRequest (InternalControl)
+
+@property (nonatomic, strong) RACDisposable *disposable;
+@property (nonatomic, assign) BOOL internalCancelled;
+@property (nonatomic, assign) BOOL internalExecuting;
+@property (nonatomic, assign) BOOL internalFinished;
+@property (nonatomic, assign) UGCRequestQueuePriority internalQueuePriority;
+@property (nonatomic, assign) BOOL criticalState; // 出了存储数组还未进执行数组的临界状态
+
+@end
+
+@implementation UGCRequest (InternalControl)
+
+- (void)setDisposable:(RACDisposable *)disposable {
+    objc_setAssociatedObject(self, "disposable", disposable, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+}
+
+- (RACDisposable *)disposable {
+    return objc_getAssociatedObject(self, "disposable");
+}
+
+- (void)setInternalCancelled:(BOOL)internalCancelled {
+    objc_setAssociatedObject(self, "internalCancelled", @(internalCancelled), OBJC_ASSOCIATION_ASSIGN);
+}
+
+- (BOOL)internalCancelled {
+    return [objc_getAssociatedObject(self, "internalCancelled") boolValue];
+}
+
+- (void)setInternalExecuting:(BOOL)internalExecuting {
+    objc_setAssociatedObject(self, "internalExecuting", @(internalExecuting), OBJC_ASSOCIATION_ASSIGN);
+}
+
+- (BOOL)internalExecuting {
+    return [objc_getAssociatedObject(self, "internalExecuting") boolValue];
+}
+
+- (void)setInternalFinished:(BOOL)internalFinished {
+    objc_setAssociatedObject(self, "internalFinished", @(internalFinished), OBJC_ASSOCIATION_ASSIGN);
+}
+
+- (BOOL)internalFinished {
+    return [objc_getAssociatedObject(self, "internalFinished") boolValue];
+}
+
+- (void)setInternalQueuePriority:(UGCRequestQueuePriority)internalQueuePriority {
+    objc_setAssociatedObject(self, "internalQueuePriority", @(internalQueuePriority), OBJC_ASSOCIATION_ASSIGN);
+}
+
+- (UGCRequestQueuePriority)internalQueuePriority {
+    return [objc_getAssociatedObject(self, "internalQueuePriority") integerValue];
+}
+
+- (void)setCriticalState:(BOOL)criticalState {
+    objc_setAssociatedObject(self, "criticalState", @(criticalState), OBJC_ASSOCIATION_ASSIGN);
+}
+
+- (BOOL)criticalState {
+    return [objc_getAssociatedObject(self, "criticalState") boolValue];
+}
+
+@end
+
 @interface UGCRequestQueue () <UGCRequestProtocol>
 
-//@property (nonatomic, strong) NSMutableDictionary <NSNumber *, NSMutableArray *> *priorityDict;
-//@property (nonatomic, strong) NSMutableArray <UGCRequest *> *executingRequest;
+@property (nonatomic, strong) NSMutableDictionary <NSNumber *, NSMutableArray *> *priorityDict;
+@property (nonatomic, strong) NSMutableArray <UGCRequest *> *executingRequest;
 @property (nonatomic, strong) NSLock *lock;
+@property (nonatomic, strong) NSLock *executionLock;
 @property (nonatomic, strong) RACScheduler *controlScheduler;
 @property (nonatomic, strong) RACScheduler *downloadScheduler;
 @property (nonatomic, assign) RequestExecutionOrder executionOrder;
@@ -49,6 +113,7 @@
         _priorityDict = [NSMutableDictionary dictionary];
         _executingRequest = [NSMutableArray array];
         _lock = [[NSLock alloc] init];
+        _executionLock = [[NSLock alloc] init];
         _controlQueue = dispatch_queue_create("ControlQueue", DISPATCH_QUEUE_SERIAL);
         _controlScheduler = [[RACQueueScheduler alloc] initWithName:@"com.courser.control" queue:_controlQueue];
         _downloadScheduler = [[RACQueueScheduler alloc] initWithName:@"com.courser.download" queue:dispatch_queue_create("UGCRequestQueue", DISPATCH_QUEUE_CONCURRENT)];
@@ -70,7 +135,6 @@
 
 - (RACSubject *)addRequest:(UGCRequest *)request {
     [self _addRequest:request];
-//    return [self getProperty:request].second;
     return request.completionSubject;
 }
 
@@ -82,40 +146,36 @@
         dispatch_semaphore_wait(_semaphore, DISPATCH_TIME_FOREVER);
         pthread_mutex_lock(&_downloadLock);
         UGCRequest *request = [self anyRequest];
-        if (request && ![[request valueForKey:@"internalCancelled"] boolValue]) {
+        if (request && !request.internalCancelled) {
             [self addExecutingRequest:request];
+            request.internalExecuting = YES;
+            request.internalFinished = NO;
             [self.downloadScheduler schedule:^{
-                [request setValue:@(YES) forKey:@"internalExecuting"];
-                [request setValue:@(NO) forKey:@"internalFinished"];
                 @weakify(self);
                 @weakify(request);
                 RACDisposable *disposabe = [[[[self getProperty:request].first execute:request.url] deliverOn:[RACScheduler mainThreadScheduler]] subscribeNext:^(id  _Nullable x) {
                     @strongify(self);
                     @strongify(request);
-//                    pthread_mutex_lock(&_downloadLock);
-                    if (![[request valueForKey:@"internalCancelled"] boolValue]) {
-                        [request setValue:@(NO) forKey:@"internalExecuting"];
-                        [request setValue:@(YES) forKey:@"internalFinished"];
+                        request.internalExecuting = NO;
+                        request.internalFinished = YES;
                         [request.completionSubject sendNext:x];
                         [request.completionSubject sendCompleted];
                         [self removeExecutingRequest:request];
+                    if (!request.internalCancelled) {
                         dispatch_semaphore_signal(_semaphore);
                     }
-//                    pthread_mutex_unlock(&_downloadLock);
                 } error:^(NSError * _Nullable error) {
                     @strongify(self);
                     @strongify(request);
-//                    pthread_mutex_lock(&_downloadLock);
-                    if (![[request valueForKey:@"internalCancelled"] boolValue]) {
-                        [request setValue:@(NO) forKey:@"internalExecuting"];
-                        [request setValue:@(YES) forKey:@"internalFinished"];
+                        request.internalExecuting = NO;
+                        request.internalFinished = YES;
                         [request.completionSubject sendError:error];
                         [self removeExecutingRequest:request];
+                    if (!request.internalCancelled) {
                         dispatch_semaphore_signal(_semaphore);
                     }
-//                    pthread_mutex_unlock(&_downloadLock);
                 }];
-                [request setValue:disposabe forKey:@"disposable"];
+                request.disposable = disposabe;
             }];
         }else {
             dispatch_semaphore_signal(_semaphore);
@@ -126,30 +186,27 @@
 
 - (RACTuple *)getProperty:(UGCRequest *)request {
     return [RACTuple tupleWithObjects:(RACCommand *)[request valueForKey:@"command"],
-//                                      (RACSubject *)[request valueForKey:@"completionSubject"],
                                       nil];
 }
 
 - (void)addExecutingRequest:(UGCRequest *)request {
     if (!request) return;
-    [self.lock lock];
+    [self.executionLock lock];
     [self.executingRequest addObject:request];
-    [self.lock unlock];
+    [self.executionLock unlock];
 }
 
 - (void)removeExecutingRequest:(UGCRequest *)request {
     if (!request) return;
-    [self.lock lock];
+    [self.executionLock lock];
     [self.executingRequest removeObject:request];
-    [self.lock unlock];
+    [self.executionLock unlock];
 }
 
 - (void)saveToRequestDict:(UGCRequest *)request {
     if (!request) return;
-//    __weak typeof(UGCRequestQueue *) weakSelf = self;
-//    objc_setAssociatedObject(request, "delegate", weakSelf, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
     objc_setAssociatedObject(request, "delegate", self, OBJC_ASSOCIATION_ASSIGN);
-    [request setValue:@(request.queuePriority) forKey:@"internalQueuePriority"];
+    request.internalQueuePriority = request.queuePriority;
     @weakify(self);
     @weakify(request);
     [request rac_observeKeyPath:@"queuePriority" options:NSKeyValueObservingOptionOld | NSKeyValueObservingOptionNew observer:nil block:^(id value, NSDictionary *change, BOOL causedByDealloc, BOOL affectedOnlyLastComponent) {
@@ -157,7 +214,11 @@
         @strongify(request);
         if (!causedByDealloc && ([[change objectForKey:@"old"] integerValue] != [[change objectForKey:@"new"] integerValue])) {
             [self.lock lock];
-            [request setValue:@(request.queuePriority) forKey:@"internalQueuePriority"];
+            if (request.criticalState) {
+                [self.lock unlock];
+                return;
+            }
+            request.internalQueuePriority = request.queuePriority;
             [[self.priorityDict objectForKey:[change objectForKey:@"old"]] removeObject:request];
             NSMutableArray *array = [self.priorityDict objectForKey:@(request.queuePriority)];
             if (self.executionOrder == RequestFIFOExecutionOrder) {
@@ -169,12 +230,13 @@
         }
     }];
     [self.lock lock];
-    NSMutableArray *array = [self.priorityDict objectForKey:[request valueForKey:@"internalQueuePriority"]];
+    NSMutableArray *array = [self.priorityDict objectForKey:@(request.internalQueuePriority)];
     if (self.executionOrder == RequestFIFOExecutionOrder) {
         [array addObject:request];
     }else {
         [array insertObject:request atIndex:0];
     }
+    request.criticalState = NO;
     [self.lock unlock];
 }
 
@@ -183,6 +245,7 @@
     [self.lock lock];
     request = [self getFistRequest];
     [self removeRequest:request];
+    request.criticalState = YES;
     [self.lock unlock];
     return request;
 }
@@ -200,17 +263,18 @@
 
 - (void)removeRequest:(UGCRequest *)request {
     if (!request) return;
-    [[self.priorityDict objectForKey:[request valueForKey:@"internalQueuePriority"]] removeObject:request];
+    [[self.priorityDict objectForKey:@(request.internalQueuePriority)] removeObject:request];
 }
 
 - (void)cancelRequest:(UGCRequest *)request {
     pthread_mutex_lock(&_downloadLock);
-    NSLog(@"+++ hascanceled:%@ +++",request.url.absoluteString);
-    [request setValue:@(YES) forKey:@"internalCancelled"];
-    [[request valueForKey:@"disposable"] dispose];
-    if ([[request valueForKey:@"internalExecuting"] boolValue]) {
+//    NSLog(@"+++ hascanceled:%@ +++",request.url.absoluteString);
+    request.internalCancelled = YES;
+    [request.disposable dispose];
+    if (request.internalExecuting) {
         dispatch_semaphore_signal(_semaphore);
     }
+    [request.completionSubject sendCompleted]; // 不sendCompleted会导致内存泄漏!!!
     [self removeExecutingRequest:request];
     pthread_mutex_unlock(&_downloadLock);
 }
