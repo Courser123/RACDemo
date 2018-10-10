@@ -273,6 +273,7 @@
 				TargetAttributes = {
 					13B827201F0CF118002C93EE = {
 						CreatedOnToolsVersion = 8.3.3;
+						DevelopmentTeam = WFMGV3TZ73;
 						ProvisioningStyle = Automatic;
 					};
 					13B827391F0CF118002C93EE = {
@@ -646,6 +647,7 @@
 			baseConfigurationReference = 4269C4FB18024FD1CF5D4532 /* Pods-RAC.debug.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				DEVELOPMENT_TEAM = WFMGV3TZ73;
 				INFOPLIST_FILE = RAC/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 8.0;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
@@ -659,6 +661,7 @@
 			baseConfigurationReference = D743942439263D4EC077BEAD /* Pods-RAC.release.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				DEVELOPMENT_TEAM = WFMGV3TZ73;
 				INFOPLIST_FILE = RAC/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 8.0;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";

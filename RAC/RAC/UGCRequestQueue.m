@@ -28,8 +28,8 @@
 
 @interface UGCRequestQueue () <UGCRequestProtocol>
 
-@property (nonatomic, strong) NSMutableDictionary <NSNumber *, NSMutableArray *> *priorityDict;
-@property (nonatomic, strong) NSMutableArray <UGCRequest *> *executingRequest;
+//@property (nonatomic, strong) NSMutableDictionary <NSNumber *, NSMutableArray *> *priorityDict;
+//@property (nonatomic, strong) NSMutableArray <UGCRequest *> *executingRequest;
 @property (nonatomic, strong) NSLock *lock;
 @property (nonatomic, strong) RACScheduler *controlScheduler;
 @property (nonatomic, strong) RACScheduler *downloadScheduler;
@@ -70,7 +70,8 @@
 
 - (RACSubject *)addRequest:(UGCRequest *)request {
     [self _addRequest:request];
-    return [self getProperty:request].second;
+//    return [self getProperty:request].second;
+    return request.completionSubject;
 }
 
 - (void)_addRequest:(UGCRequest *)request {
@@ -84,25 +85,35 @@
         if (request && ![[request valueForKey:@"internalCancelled"] boolValue]) {
             [self addExecutingRequest:request];
             [self.downloadScheduler schedule:^{
+                [request setValue:@(YES) forKey:@"internalExecuting"];
+                [request setValue:@(NO) forKey:@"internalFinished"];
                 @weakify(self);
                 @weakify(request);
                 RACDisposable *disposabe = [[[[self getProperty:request].first execute:request.url] deliverOn:[RACScheduler mainThreadScheduler]] subscribeNext:^(id  _Nullable x) {
                     @strongify(self);
                     @strongify(request);
-                    [[self getProperty:request].second sendNext:x];
-                    [[self getProperty:request].second sendCompleted];
-                    [self removeExecutingRequest:request];
+//                    pthread_mutex_lock(&_downloadLock);
                     if (![[request valueForKey:@"internalCancelled"] boolValue]) {
+                        [request setValue:@(NO) forKey:@"internalExecuting"];
+                        [request setValue:@(YES) forKey:@"internalFinished"];
+                        [request.completionSubject sendNext:x];
+                        [request.completionSubject sendCompleted];
+                        [self removeExecutingRequest:request];
                         dispatch_semaphore_signal(_semaphore);
                     }
+//                    pthread_mutex_unlock(&_downloadLock);
                 } error:^(NSError * _Nullable error) {
                     @strongify(self);
                     @strongify(request);
-                    [[self getProperty:request].second sendError:error];
-                    [self removeExecutingRequest:request];
+//                    pthread_mutex_lock(&_downloadLock);
                     if (![[request valueForKey:@"internalCancelled"] boolValue]) {
+                        [request setValue:@(NO) forKey:@"internalExecuting"];
+                        [request setValue:@(YES) forKey:@"internalFinished"];
+                        [request.completionSubject sendError:error];
+                        [self removeExecutingRequest:request];
                         dispatch_semaphore_signal(_semaphore);
                     }
+//                    pthread_mutex_unlock(&_downloadLock);
                 }];
                 [request setValue:disposabe forKey:@"disposable"];
             }];
@@ -115,7 +126,7 @@
 
 - (RACTuple *)getProperty:(UGCRequest *)request {
     return [RACTuple tupleWithObjects:(RACCommand *)[request valueForKey:@"command"],
-                                      (RACSubject *)[request valueForKey:@"subject"],
+//                                      (RACSubject *)[request valueForKey:@"completionSubject"],
                                       nil];
 }
 
@@ -135,8 +146,10 @@
 
 - (void)saveToRequestDict:(UGCRequest *)request {
     if (!request) return;
-    __weak typeof(UGCRequestQueue *) weakSelf = self;
-    objc_setAssociatedObject(request, "delegate", weakSelf, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+//    __weak typeof(UGCRequestQueue *) weakSelf = self;
+//    objc_setAssociatedObject(request, "delegate", weakSelf, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+    objc_setAssociatedObject(request, "delegate", self, OBJC_ASSOCIATION_ASSIGN);
+    [request setValue:@(request.queuePriority) forKey:@"internalQueuePriority"];
     @weakify(self);
     @weakify(request);
     [request rac_observeKeyPath:@"queuePriority" options:NSKeyValueObservingOptionOld | NSKeyValueObservingOptionNew observer:nil block:^(id value, NSDictionary *change, BOOL causedByDealloc, BOOL affectedOnlyLastComponent) {
@@ -144,6 +157,7 @@
         @strongify(request);
         if (!causedByDealloc && ([[change objectForKey:@"old"] integerValue] != [[change objectForKey:@"new"] integerValue])) {
             [self.lock lock];
+            [request setValue:@(request.queuePriority) forKey:@"internalQueuePriority"];
             [[self.priorityDict objectForKey:[change objectForKey:@"old"]] removeObject:request];
             NSMutableArray *array = [self.priorityDict objectForKey:@(request.queuePriority)];
             if (self.executionOrder == RequestFIFOExecutionOrder) {
@@ -155,7 +169,7 @@
         }
     }];
     [self.lock lock];
-    NSMutableArray *array = [self.priorityDict objectForKey:@(request.queuePriority)];
+    NSMutableArray *array = [self.priorityDict objectForKey:[request valueForKey:@"internalQueuePriority"]];
     if (self.executionOrder == RequestFIFOExecutionOrder) {
         [array addObject:request];
     }else {
@@ -186,7 +200,7 @@
 
 - (void)removeRequest:(UGCRequest *)request {
     if (!request) return;
-    [[self.priorityDict objectForKey:@(request.queuePriority)] removeObject:request];
+    [[self.priorityDict objectForKey:[request valueForKey:@"internalQueuePriority"]] removeObject:request];
 }
 
 - (void)cancelRequest:(UGCRequest *)request {
@@ -194,7 +208,7 @@
     NSLog(@"+++ hascanceled:%@ +++",request.url.absoluteString);
     [request setValue:@(YES) forKey:@"internalCancelled"];
     [[request valueForKey:@"disposable"] dispose];
-    if (request.isExecuting) {
+    if ([[request valueForKey:@"internalExecuting"] boolValue]) {
         dispatch_semaphore_signal(_semaphore);
     }
     [self removeExecutingRequest:request];

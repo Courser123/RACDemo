@@ -37,6 +37,10 @@ typedef NS_ENUM(NSInteger, RequestExecutionOrder) {
 
 - (RACSubject *)addRequest:(UGCRequest *)request;
 
+// 检查UGCRequestQueue是否有内存泄漏
 - (void)_addRequest:(UGCRequest *)request; // 测试方法
+
+@property (nonatomic, strong) NSMutableDictionary <NSNumber *, NSMutableArray *> *priorityDict;
+@property (nonatomic, strong) NSMutableArray <UGCRequest *> *executingRequest;
 
 @end

@@ -40,6 +40,7 @@
 //    }
     NSOperationQueue *queue = [NSOperationQueue new];
     NSLog(@"%ld",queue.maxConcurrentOperationCount);
+    
 }
 
 - (void)touchesBegan:(NSSet<UITouch *> *)touches withEvent:(UIEvent *)event {
@@ -48,30 +49,37 @@
 }
 
 - (void)test {
-    for (int i = 0 ; i < 10000; i ++) {
+    
+    for (int i = 0 ; i < 100; i ++) {
         
-        UGCRequest *request = [[UGCRequest alloc] init];
-        request.url = [NSURL URLWithString:[NSString stringWithFormat:@"%d",i]];
-        if (i % 2 == 0) {
-            request.queuePriority = NSOperationQueuePriorityHigh;
-        }else {
-            request.queuePriority = NSOperationQueuePriorityNormal;
-        }
-        //        self.queue.suspended = YES;
-//        [[self.queue addRequest:request] subscribeNext:^(id  _Nullable x) {
-//            NSLog(@"addRequest done:%@ , queuePriority:%ld",x, request.queuePriority);
-//        } error:^(NSError * _Nullable error) {
-//            NSLog(@"addRequest error:%@",error);
-//        }];
-        [self.queue _addRequest:request];
+//        dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
         
-        if (i > 5000 && i <= 7500) {
-            request.queuePriority = NSOperationQueuePriorityVeryHigh;
-        }
+            UGCRequest *request = [[UGCRequest alloc] init];
+            request.url = [NSURL URLWithString:[NSString stringWithFormat:@"%d",i]];
+            if (i % 2 == 0) {
+                request.queuePriority = UGCRequestQueuePriorityHigh;
+            }else {
+                request.queuePriority = UGCRequestQueuePriorityNormal;
+            }
+            //        self.queue.suspended = YES;
+//            [[self.queue addRequest:request] subscribeNext:^(id  _Nullable x) {
+//                NSLog(@"addRequest done:%@ , queuePriority:%ld",x, request.queuePriority);
+//            } error:^(NSError * _Nullable error) {
+//                NSLog(@"addRequest error:%@",error);
+//            }];
+//        [self.queue addRequest:request];
         
-//        if (i < 5000) {
-//            [request cancel];
-//        }
+            [self.queue _addRequest:request];
+        
+//            if (i > 5000 && i <= 7500) {
+                request.queuePriority = UGCRequestQueuePriorityVeryLow;
+//            }
+        
+            if (i < 5000) {
+                [request cancel];
+            }
+    
+//        });
         
     }
     //    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(1.0 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
