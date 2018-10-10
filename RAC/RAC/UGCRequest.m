@@ -28,6 +28,7 @@
         _queuePriority = UGCRequestQueuePriorityNormal;
         _executing = NO;
         _finished = NO;
+        _cancelled = NO;
     }
     return self;
 }
