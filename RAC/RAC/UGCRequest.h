@@ -24,7 +24,8 @@ typedef NS_ENUM(NSInteger, UGCRequestQueuePriority) {
 @property (readonly, getter = isExecuting) BOOL executing;
 @property (readonly, getter = isFinished) BOOL finished;
 @property (readonly, getter=isCancelled) BOOL cancelled;
-@property (nonatomic, readonly, strong) RACSubject *completionSubject; // 订阅回调信息
+
+- (RACCommand *)start;
 
 - (void)cancel;
 

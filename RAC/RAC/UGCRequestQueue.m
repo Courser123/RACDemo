@@ -28,6 +28,7 @@
 
 @interface UGCRequest (InternalControl)
 
+@property (nonatomic, readwrite, strong) RACSubject *completionSubject;
 @property (nonatomic, strong) RACDisposable *disposable;
 @property (nonatomic, assign) BOOL internalCancelled;
 @property (nonatomic, assign) BOOL internalExecuting;
@@ -38,6 +39,14 @@
 @end
 
 @implementation UGCRequest (InternalControl)
+
+- (void)setCompletionSubject:(RACSubject *)completionSubject {
+    objc_setAssociatedObject(self, "completionSubject", completionSubject, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+}
+
+- (RACSubject *)completionSubject {
+    return objc_getAssociatedObject(self, "completionSubject");
+}
 
 - (void)setDisposable:(RACDisposable *)disposable {
     objc_setAssociatedObject(self, "disposable", disposable, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
@@ -135,6 +144,8 @@
 
 - (RACSubject *)addRequest:(UGCRequest *)request {
     [self _addRequest:request];
+    RACSubject *completionSubject = [RACSubject subject];
+    request.completionSubject = completionSubject;
     return request.completionSubject;
 }
 
@@ -153,7 +164,7 @@
             [self.downloadScheduler schedule:^{
                 @weakify(self);
                 @weakify(request);
-                RACDisposable *disposabe = [[[[self getProperty:request].first execute:request.url] deliverOn:[RACScheduler mainThreadScheduler]] subscribeNext:^(id  _Nullable x) {
+                RACDisposable *disposabe = [[[[request start] execute:request.url] deliverOn:[RACScheduler mainThreadScheduler]] subscribeNext:^(id  _Nullable x) {
                     @strongify(self);
                     @strongify(request);
                         request.internalExecuting = NO;
@@ -182,11 +193,6 @@
         }
         pthread_mutex_unlock(&_downloadLock);
     }];
-}
-
-- (RACTuple *)getProperty:(UGCRequest *)request {
-    return [RACTuple tupleWithObjects:(RACCommand *)[request valueForKey:@"command"],
-                                      nil];
 }
 
 - (void)addExecutingRequest:(UGCRequest *)request {

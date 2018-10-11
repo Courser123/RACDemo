@@ -9,6 +9,7 @@
 /* Begin PBXBuildFile section */
 		1332B72221467F57009F20CD /* UGCRequest.m in Sources */ = {isa = PBXBuildFile; fileRef = 1332B72121467F57009F20CD /* UGCRequest.m */; };
 		1332B72521468766009F20CD /* UGCRequestQueue.m in Sources */ = {isa = PBXBuildFile; fileRef = 1332B72421468766009F20CD /* UGCRequestQueue.m */; };
+		1332D926216F2B5E00AD61D1 /* TestRequest.m in Sources */ = {isa = PBXBuildFile; fileRef = 1332D925216F2B5E00AD61D1 /* TestRequest.m */; };
 		13B827261F0CF118002C93EE /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = 13B827251F0CF118002C93EE /* main.m */; };
 		13B827291F0CF118002C93EE /* AppDelegate.m in Sources */ = {isa = PBXBuildFile; fileRef = 13B827281F0CF118002C93EE /* AppDelegate.m */; };
 		13B8272C1F0CF118002C93EE /* ViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = 13B8272B1F0CF118002C93EE /* ViewController.m */; };
@@ -45,6 +46,8 @@
 		1332B72121467F57009F20CD /* UGCRequest.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = UGCRequest.m; sourceTree = "<group>"; };
 		1332B72321468766009F20CD /* UGCRequestQueue.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = UGCRequestQueue.h; sourceTree = "<group>"; };
 		1332B72421468766009F20CD /* UGCRequestQueue.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = UGCRequestQueue.m; sourceTree = "<group>"; };
+		1332D924216F2B5E00AD61D1 /* TestRequest.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = TestRequest.h; sourceTree = "<group>"; };
+		1332D925216F2B5E00AD61D1 /* TestRequest.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = TestRequest.m; sourceTree = "<group>"; };
 		133C1B1921539354004DAAB7 /* UGCRequestProtocol.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = UGCRequestProtocol.h; sourceTree = "<group>"; };
 		13B827211F0CF118002C93EE /* RAC.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = RAC.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		13B827251F0CF118002C93EE /* main.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = main.m; sourceTree = "<group>"; };
@@ -134,6 +137,8 @@
 				1332B72321468766009F20CD /* UGCRequestQueue.h */,
 				1332B72421468766009F20CD /* UGCRequestQueue.m */,
 				133C1B1921539354004DAAB7 /* UGCRequestProtocol.h */,
+				1332D924216F2B5E00AD61D1 /* TestRequest.h */,
+				1332D925216F2B5E00AD61D1 /* TestRequest.m */,
 				13B8272D1F0CF118002C93EE /* Main.storyboard */,
 				13B827301F0CF118002C93EE /* Assets.xcassets */,
 				13B827321F0CF118002C93EE /* LaunchScreen.storyboard */,
@@ -486,6 +491,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				1332B72521468766009F20CD /* UGCRequestQueue.m in Sources */,
+				1332D926216F2B5E00AD61D1 /* TestRequest.m in Sources */,
 				13B8272C1F0CF118002C93EE /* ViewController.m in Sources */,
 				13B827291F0CF118002C93EE /* AppDelegate.m in Sources */,
 				13B827261F0CF118002C93EE /* main.m in Sources */,

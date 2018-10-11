@@ -13,8 +13,6 @@
 
 @interface UGCRequest ()
 
-@property (nonatomic, readonly, strong) RACCommand *command;
-@property (nonatomic, readwrite, strong) RACSubject *completionSubject;
 @property (assign, nonatomic, getter = isExecuting) BOOL executing;
 @property (assign, nonatomic, getter = isFinished) BOOL finished;
 @property (assign, nonatomic, getter=isCancelled) BOOL cancelled;
@@ -33,7 +31,7 @@
     return self;
 }
 
-- (RACCommand *)command {
+- (RACCommand *)start {
     
     return [[RACCommand alloc] initWithSignalBlock:^RACSignal * _Nonnull(id  _Nullable input) {
         self.executing = YES;
@@ -55,20 +53,11 @@
     }];
 }
 
-- (RACSubject *)completionSubject {
-    if (!_completionSubject) {
-        _completionSubject = [RACSubject subject];
-    }
-    return _completionSubject;
-}
-
 - (void)cancel {
     self.cancelled = YES;
     id <UGCRequestProtocol> delegate = objc_getAssociatedObject(self, "delegate");
     if ([delegate respondsToSelector:@selector(cancelRequest:)]) {
         [delegate cancelRequest:self];
-    }else {
-        NSLog(@"delegate error");
     }
 }
 

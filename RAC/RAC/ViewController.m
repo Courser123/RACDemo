@@ -10,6 +10,7 @@
 #import "ReactiveObjC.h"
 #import "UGCRequest.h"
 #import "UGCRequestQueue.h"
+#import "TestRequest.h"
 
 @interface ViewController ()
 
@@ -28,12 +29,13 @@
     UGCRequestQueueOptions *options = [UGCRequestQueueOptions new];
 //    options.executionOrder = RequestLIFOExecutionOrder;
     self.queue = [[UGCRequestQueue alloc] initWithUGCRequestQueueOptions:options];
-    
+
 }
 
 - (void)touchesBegan:(NSSet<UITouch *> *)touches withEvent:(UIEvent *)event {
     [self test];
 //    [self testQueue];
+//    [self testRequest];
 }
 
 - (void)testQueue {
@@ -75,13 +77,27 @@
     //    });
 }
 
+- (void)testRequest {
+    
+    for (int i = 0 ; i < 1000; i++) {
+        UGCRequest *request = [UGCRequest new];
+        request.url = [NSURL URLWithString:[NSString stringWithFormat:@"%d",i]];
+        [[[request start] execute:request.url] subscribeNext:^(id  _Nullable x) {
+            NSLog(@"+++ request : %@ +++",x);
+        } error:^(NSError * _Nullable error) {
+            NSLog(@"+++ error : %@ +++",error);
+        }];
+    }
+    
+}
+
 - (void)test {
     
     for (int i = 0 ; i < 10000; i ++) {
         
         dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
             
-            UGCRequest *request = [[UGCRequest alloc] init];
+            TestRequest *request = [[TestRequest alloc] init];
             request.url = [NSURL URLWithString:[NSString stringWithFormat:@"%d",i]];
             if (i % 2 == 0) {
                 request.queuePriority = UGCRequestQueuePriorityHigh;
