@@ -143,9 +143,9 @@
 }
 
 - (RACSubject *)addRequest:(UGCRequest *)request {
-    [self _addRequest:request];
     RACSubject *completionSubject = [RACSubject subject];
     request.completionSubject = completionSubject;
+    [self _addRequest:request];
     return request.completionSubject;
 }
 

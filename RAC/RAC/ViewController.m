@@ -112,7 +112,7 @@
             }];
             
             if (i > 5000 && i <= 7500) {
-                request.queuePriority = UGCRequestQueuePriorityVeryLow;
+                request.queuePriority = UGCRequestQueuePriorityVeryHigh;
             }
             
             if (i < 5000) {
