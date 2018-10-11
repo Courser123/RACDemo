@@ -33,6 +33,46 @@
 
 - (void)touchesBegan:(NSSet<UITouch *> *)touches withEvent:(UIEvent *)event {
     [self test];
+//    [self testQueue];
+}
+
+- (void)testQueue {
+    
+    UGCRequestQueueOptions *options = [UGCRequestQueueOptions new];
+    UGCRequestQueue *queue = [[UGCRequestQueue alloc] initWithUGCRequestQueueOptions:options];
+    
+    for (int i = 0 ; i < 100; i ++) {
+        
+        dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
+            
+            UGCRequest *request = [[UGCRequest alloc] init];
+            request.url = [NSURL URLWithString:[NSString stringWithFormat:@"%d",i]];
+            if (i % 2 == 0) {
+                request.queuePriority = UGCRequestQueuePriorityHigh;
+            }else {
+                request.queuePriority = UGCRequestQueuePriorityNormal;
+            }
+            //            self.queue.suspended = YES;
+            [[queue addRequest:request] subscribeNext:^(id  _Nullable x) {
+                NSLog(@"addRequest done:%@ , queuePriority:%ld",x, request.queuePriority);
+            } error:^(NSError * _Nullable error) {
+                NSLog(@"addRequest error:%@",error);
+            }];
+            
+            if (i > 5000 && i <= 7500) {
+                request.queuePriority = UGCRequestQueuePriorityVeryLow;
+            }
+            
+            if (i < 5000) {
+                [request cancel];
+            }
+            
+        });
+        
+    }
+    //    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(1.0 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
+    //        self.queue.suspended = NO;
+    //    });
 }
 
 - (void)test {
