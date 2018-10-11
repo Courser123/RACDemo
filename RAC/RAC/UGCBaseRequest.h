@@ -1,5 +1,5 @@
 //
-//  UGCRequest.h
+//  UGCBaseRequest.h
 //  RAC
 //
 //  Created by Courser on 2018/9/10.
@@ -17,7 +17,7 @@ typedef NS_ENUM(NSInteger, UGCRequestQueuePriority) {
     UGCRequestQueuePriorityVeryHigh = 8
 };
 
-@interface UGCRequest : NSObject
+@interface UGCBaseRequest : NSObject
 
 @property (nonatomic, strong) NSURL *url;
 @property UGCRequestQueuePriority queuePriority;

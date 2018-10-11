@@ -8,7 +8,7 @@
 
 #import "ViewController.h"
 #import "ReactiveObjC.h"
-#import "UGCRequest.h"
+#import "UGCBaseRequest.h"
 #import "UGCRequestQueue.h"
 #import "TestRequest.h"
 
@@ -29,7 +29,7 @@
     UGCRequestQueueOptions *options = [UGCRequestQueueOptions new];
 //    options.executionOrder = RequestLIFOExecutionOrder;
     self.queue = [[UGCRequestQueue alloc] initWithUGCRequestQueueOptions:options];
-
+    
 }
 
 - (void)touchesBegan:(NSSet<UITouch *> *)touches withEvent:(UIEvent *)event {
@@ -47,7 +47,7 @@
         
         dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
             
-            UGCRequest *request = [[UGCRequest alloc] init];
+            UGCBaseRequest *request = [[UGCBaseRequest alloc] init];
             request.url = [NSURL URLWithString:[NSString stringWithFormat:@"%d",i]];
             if (i % 2 == 0) {
                 request.queuePriority = UGCRequestQueuePriorityHigh;
@@ -80,7 +80,7 @@
 - (void)testRequest {
     
     for (int i = 0 ; i < 1000; i++) {
-        UGCRequest *request = [UGCRequest new];
+        UGCBaseRequest *request = [UGCBaseRequest new];
         request.url = [NSURL URLWithString:[NSString stringWithFormat:@"%d",i]];
         [[[request start] execute:request.url] subscribeNext:^(id  _Nullable x) {
             NSLog(@"+++ request : %@ +++",x);

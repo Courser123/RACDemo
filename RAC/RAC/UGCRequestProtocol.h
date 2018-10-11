@@ -7,11 +7,11 @@
 //
 
 #import <Foundation/Foundation.h>
-@class UGCRequest;
+@class UGCBaseRequest;
 
 @protocol UGCRequestProtocol <NSObject>
 
-- (void)cancelRequest:(UGCRequest *)request;
+- (void)cancelRequest:(UGCBaseRequest *)request;
 
 @end
 

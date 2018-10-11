@@ -6,9 +6,9 @@
 //  Copyright © 2018 王忠迪. All rights reserved.
 //
 
-#import "UGCRequest.h"
+#import "UGCBaseRequest.h"
 
-@interface TestRequest : UGCRequest
+@interface TestRequest : UGCBaseRequest
 
 @end
 

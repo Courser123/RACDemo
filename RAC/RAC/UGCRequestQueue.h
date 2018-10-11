@@ -8,7 +8,7 @@
 
 #import <Foundation/Foundation.h>
 #import "ReactiveObjC.h"
-@class UGCRequest;
+@class UGCBaseRequest;
 
 typedef NS_ENUM(NSInteger, UGCRequestExecutionOrder) {
     /**
@@ -35,7 +35,7 @@ typedef NS_ENUM(NSInteger, UGCRequestExecutionOrder) {
 
 - (instancetype)initWithUGCRequestQueueOptions:(UGCRequestQueueOptions *)options;
 
-- (RACSubject *)addRequest:(UGCRequest *)request;
+- (RACSubject *)addRequest:(UGCBaseRequest *)request;
 
 
 @end

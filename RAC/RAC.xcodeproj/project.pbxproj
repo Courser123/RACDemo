@@ -7,7 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		1332B72221467F57009F20CD /* UGCRequest.m in Sources */ = {isa = PBXBuildFile; fileRef = 1332B72121467F57009F20CD /* UGCRequest.m */; };
+		1332B72221467F57009F20CD /* UGCBaseRequest.m in Sources */ = {isa = PBXBuildFile; fileRef = 1332B72121467F57009F20CD /* UGCBaseRequest.m */; };
 		1332B72521468766009F20CD /* UGCRequestQueue.m in Sources */ = {isa = PBXBuildFile; fileRef = 1332B72421468766009F20CD /* UGCRequestQueue.m */; };
 		1332D926216F2B5E00AD61D1 /* TestRequest.m in Sources */ = {isa = PBXBuildFile; fileRef = 1332D925216F2B5E00AD61D1 /* TestRequest.m */; };
 		13B827261F0CF118002C93EE /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = 13B827251F0CF118002C93EE /* main.m */; };
@@ -42,8 +42,8 @@
 
 /* Begin PBXFileReference section */
 		11A5F6DC4F37FD03D803C9A3 /* Pods_RAC.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_RAC.framework; sourceTree = BUILT_PRODUCTS_DIR; };
-		1332B72021467F57009F20CD /* UGCRequest.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = UGCRequest.h; sourceTree = "<group>"; };
-		1332B72121467F57009F20CD /* UGCRequest.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = UGCRequest.m; sourceTree = "<group>"; };
+		1332B72021467F57009F20CD /* UGCBaseRequest.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = UGCBaseRequest.h; sourceTree = "<group>"; };
+		1332B72121467F57009F20CD /* UGCBaseRequest.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = UGCBaseRequest.m; sourceTree = "<group>"; };
 		1332B72321468766009F20CD /* UGCRequestQueue.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = UGCRequestQueue.h; sourceTree = "<group>"; };
 		1332B72421468766009F20CD /* UGCRequestQueue.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = UGCRequestQueue.m; sourceTree = "<group>"; };
 		1332D924216F2B5E00AD61D1 /* TestRequest.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = TestRequest.h; sourceTree = "<group>"; };
@@ -132,8 +132,8 @@
 				13B827281F0CF118002C93EE /* AppDelegate.m */,
 				13B8272A1F0CF118002C93EE /* ViewController.h */,
 				13B8272B1F0CF118002C93EE /* ViewController.m */,
-				1332B72021467F57009F20CD /* UGCRequest.h */,
-				1332B72121467F57009F20CD /* UGCRequest.m */,
+				1332B72021467F57009F20CD /* UGCBaseRequest.h */,
+				1332B72121467F57009F20CD /* UGCBaseRequest.m */,
 				1332B72321468766009F20CD /* UGCRequestQueue.h */,
 				1332B72421468766009F20CD /* UGCRequestQueue.m */,
 				133C1B1921539354004DAAB7 /* UGCRequestProtocol.h */,
@@ -495,7 +495,7 @@
 				13B8272C1F0CF118002C93EE /* ViewController.m in Sources */,
 				13B827291F0CF118002C93EE /* AppDelegate.m in Sources */,
 				13B827261F0CF118002C93EE /* main.m in Sources */,
-				1332B72221467F57009F20CD /* UGCRequest.m in Sources */,
+				1332B72221467F57009F20CD /* UGCBaseRequest.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

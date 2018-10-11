@@ -8,7 +8,7 @@
 
 #import "UGCRequestQueue.h"
 
-#import "UGCRequest.h"
+#import "UGCBaseRequest.h"
 #import <pthread.h>
 #import <objc/runtime.h>
 #import "UGCRequestProtocol.h"
@@ -26,7 +26,7 @@
 
 @end
 
-@interface UGCRequest (InternalControl)
+@interface UGCBaseRequest (InternalControl)
 
 @property (nonatomic, readwrite, strong) RACSubject *completionSubject;
 @property (nonatomic, strong) RACDisposable *disposable;
@@ -38,7 +38,7 @@
 
 @end
 
-@implementation UGCRequest (InternalControl)
+@implementation UGCBaseRequest (InternalControl)
 
 - (void)setCompletionSubject:(RACSubject *)completionSubject {
     objc_setAssociatedObject(self, "completionSubject", completionSubject, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
@@ -101,7 +101,7 @@
 @interface UGCRequestQueue () <UGCRequestProtocol>
 
 @property (nonatomic, strong) NSMutableDictionary <NSNumber *, NSMutableArray *> *priorityDict;
-@property (nonatomic, strong) NSMutableArray <UGCRequest *> *executingRequest;
+@property (nonatomic, strong) NSMutableArray <UGCBaseRequest *> *executingRequest;
 @property (nonatomic, strong) NSLock *lock;
 @property (nonatomic, strong) NSLock *executionLock;
 @property (nonatomic, strong) RACScheduler *controlScheduler;
@@ -142,21 +142,21 @@
     return [self initWithUGCRequestQueueOptions:options];
 }
 
-- (RACSubject *)addRequest:(UGCRequest *)request {
+- (RACSubject *)addRequest:(UGCBaseRequest *)request {
     RACSubject *completionSubject = [RACSubject subject];
     request.completionSubject = completionSubject;
     [self _addRequest:request];
     return request.completionSubject;
 }
 
-- (void)_addRequest:(UGCRequest *)request {
+- (void)_addRequest:(UGCBaseRequest *)request {
     [self saveToRequestDict:request];
     @weakify(self);
     [self.controlScheduler schedule:^{
         @strongify(self);
         dispatch_semaphore_wait(_semaphore, DISPATCH_TIME_FOREVER);
         pthread_mutex_lock(&_downloadLock);
-        UGCRequest *request = [self anyRequest];
+        UGCBaseRequest *request = [self anyRequest];
         if (request && !request.internalCancelled) {
             [self addExecutingRequest:request];
             request.internalExecuting = YES;
@@ -195,21 +195,21 @@
     }];
 }
 
-- (void)addExecutingRequest:(UGCRequest *)request {
+- (void)addExecutingRequest:(UGCBaseRequest *)request {
     if (!request) return;
     [self.executionLock lock];
     [self.executingRequest addObject:request];
     [self.executionLock unlock];
 }
 
-- (void)removeExecutingRequest:(UGCRequest *)request {
+- (void)removeExecutingRequest:(UGCBaseRequest *)request {
     if (!request) return;
     [self.executionLock lock];
     [self.executingRequest removeObject:request];
     [self.executionLock unlock];
 }
 
-- (void)saveToRequestDict:(UGCRequest *)request {
+- (void)saveToRequestDict:(UGCBaseRequest *)request {
     if (!request) return;
     objc_setAssociatedObject(request, "delegate", self, OBJC_ASSOCIATION_ASSIGN);
     request.internalQueuePriority = request.queuePriority;
@@ -246,8 +246,8 @@
     [self.lock unlock];
 }
 
-- (UGCRequest *)anyRequest {
-    UGCRequest *request = nil;
+- (UGCBaseRequest *)anyRequest {
+    UGCBaseRequest *request = nil;
     [self.lock lock];
     request = [self getFistRequest];
     [self removeRequest:request];
@@ -256,8 +256,8 @@
     return request;
 }
 
-- (UGCRequest *)getFistRequest {
-    UGCRequest *request = nil;
+- (UGCBaseRequest *)getFistRequest {
+    UGCBaseRequest *request = nil;
     for (NSInteger i = 8; i >= -8; i-=4) {
         request = [self.priorityDict objectForKey:@(i)].firstObject;
         if (request) {
@@ -267,12 +267,12 @@
     return request;
 }
 
-- (void)removeRequest:(UGCRequest *)request {
+- (void)removeRequest:(UGCBaseRequest *)request {
     if (!request) return;
     [[self.priorityDict objectForKey:@(request.internalQueuePriority)] removeObject:request];
 }
 
-- (void)cancelRequest:(UGCRequest *)request {
+- (void)cancelRequest:(UGCBaseRequest *)request {
     pthread_mutex_lock(&_downloadLock);
 //    NSLog(@"+++ hascanceled:%@ +++",request.url.absoluteString);
     request.internalCancelled = YES;
