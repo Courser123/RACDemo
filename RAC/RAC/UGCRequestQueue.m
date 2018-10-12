@@ -154,8 +154,8 @@
     @weakify(self);
     [self.controlScheduler schedule:^{
         @strongify(self);
-        dispatch_semaphore_wait(_semaphore, DISPATCH_TIME_FOREVER);
-        pthread_mutex_lock(&_downloadLock);
+        dispatch_semaphore_wait(self->_semaphore, DISPATCH_TIME_FOREVER);
+        pthread_mutex_lock(&self->_downloadLock);
         UGCBaseRequest *request = [self anyRequest];
         if (request && !request.internalCancelled) {
             [self addExecutingRequest:request];
@@ -164,34 +164,36 @@
             [self.downloadScheduler schedule:^{
                 @weakify(self);
                 @weakify(request);
-                RACDisposable *disposabe = [[[[request start] execute:request.url] deliverOn:[RACScheduler mainThreadScheduler]] subscribeNext:^(id  _Nullable x) {
-                    @strongify(self);
+                RACDisposable *disposabe = [[[request start] execute:request.url] subscribeNext:^(id  _Nullable x) {
                     @strongify(request);
-                        request.internalExecuting = NO;
-                        request.internalFinished = YES;
-                        [request.completionSubject sendNext:x];
-                        [request.completionSubject sendCompleted];
-                        [self removeExecutingRequest:request];
-                    if (!request.internalCancelled) {
-                        dispatch_semaphore_signal(_semaphore);
-                    }
+                    [request.completionSubject sendNext:x];
+                    [request.completionSubject sendCompleted];
                 } error:^(NSError * _Nullable error) {
                     @strongify(self);
                     @strongify(request);
-                        request.internalExecuting = NO;
-                        request.internalFinished = YES;
-                        [request.completionSubject sendError:error];
-                        [self removeExecutingRequest:request];
+                    request.internalExecuting = NO;
+                    request.internalFinished = YES;
+                    [self removeExecutingRequest:request];
                     if (!request.internalCancelled) {
-                        dispatch_semaphore_signal(_semaphore);
+                        dispatch_semaphore_signal(self->_semaphore);
+                    }
+                    [request.completionSubject sendError:error];
+                } completed:^{
+                    @strongify(self);
+                    @strongify(request);
+                    request.internalExecuting = NO;
+                    request.internalFinished = YES;
+                    [self removeExecutingRequest:request];
+                    if (!request.internalCancelled) {
+                        dispatch_semaphore_signal(self->_semaphore);
                     }
                 }];
                 request.disposable = disposabe;
             }];
         }else {
-            dispatch_semaphore_signal(_semaphore);
+            dispatch_semaphore_signal(self->_semaphore);
         }
-        pthread_mutex_unlock(&_downloadLock);
+        pthread_mutex_unlock(&self->_downloadLock);
     }];
 }
 
@@ -274,7 +276,6 @@
 
 - (void)cancelRequest:(UGCBaseRequest *)request {
     pthread_mutex_lock(&_downloadLock);
-//    NSLog(@"+++ hascanceled:%@ +++",request.url.absoluteString);
     request.internalCancelled = YES;
     [request.disposable dispose];
     if (request.internalExecuting) {
