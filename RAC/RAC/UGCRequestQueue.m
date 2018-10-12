@@ -35,10 +35,19 @@
 @property (nonatomic, assign) BOOL internalFinished;
 @property (nonatomic, assign) UGCRequestQueuePriority internalQueuePriority;
 @property (nonatomic, assign) BOOL criticalState; // 出了存储数组还未进执行数组的临界状态
+@property (nonatomic, strong) NSLock *baseLock;
 
 @end
 
 @implementation UGCBaseRequest (InternalControl)
+
+- (void)setBaseLock:(NSLock *)baseLock {
+    objc_setAssociatedObject(self, "baseLock", baseLock, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+}
+
+- (NSLock *)baseLock {
+    return objc_getAssociatedObject(self, "baseLock");
+}
 
 - (void)setCompletionSubject:(RACSubject *)completionSubject {
     objc_setAssociatedObject(self, "completionSubject", completionSubject, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
@@ -57,27 +66,42 @@
 }
 
 - (void)setInternalCancelled:(BOOL)internalCancelled {
+    [self.baseLock lock];
     objc_setAssociatedObject(self, "internalCancelled", @(internalCancelled), OBJC_ASSOCIATION_ASSIGN);
+    [self.baseLock unlock];
 }
 
 - (BOOL)internalCancelled {
-    return [objc_getAssociatedObject(self, "internalCancelled") boolValue];
+    [self.baseLock lock];
+    BOOL cancel = [objc_getAssociatedObject(self, "internalCancelled") boolValue];
+    [self.baseLock unlock];
+    return cancel;
 }
 
 - (void)setInternalExecuting:(BOOL)internalExecuting {
+    [self.baseLock lock];
     objc_setAssociatedObject(self, "internalExecuting", @(internalExecuting), OBJC_ASSOCIATION_ASSIGN);
+    [self.baseLock unlock];
 }
 
 - (BOOL)internalExecuting {
-    return [objc_getAssociatedObject(self, "internalExecuting") boolValue];
+    [self.baseLock lock];
+    BOOL executing = [objc_getAssociatedObject(self, "internalExecuting") boolValue];
+    [self.baseLock unlock];
+    return executing;
 }
 
 - (void)setInternalFinished:(BOOL)internalFinished {
+    [self.baseLock lock];
     objc_setAssociatedObject(self, "internalFinished", @(internalFinished), OBJC_ASSOCIATION_ASSIGN);
+    [self.baseLock unlock];
 }
 
 - (BOOL)internalFinished {
-    return [objc_getAssociatedObject(self, "internalFinished") boolValue];
+    [self.baseLock lock];
+    BOOL finished = [objc_getAssociatedObject(self, "internalFinished") boolValue];
+    [self.baseLock unlock];
+    return finished;
 }
 
 - (void)setInternalQueuePriority:(UGCRequestQueuePriority)internalQueuePriority {
@@ -102,8 +126,6 @@
 
 @property (nonatomic, strong) NSMutableDictionary <NSNumber *, NSMutableArray *> *priorityDict;
 @property (nonatomic, strong) NSMutableArray <UGCBaseRequest *> *executingRequest;
-@property (nonatomic, strong) NSLock *lock;
-@property (nonatomic, strong) NSLock *executionLock;
 @property (nonatomic, strong) RACScheduler *controlScheduler;
 @property (nonatomic, strong) RACScheduler *downloadScheduler;
 @property (nonatomic, assign) UGCRequestExecutionOrder executionOrder;
@@ -114,6 +136,8 @@
     dispatch_semaphore_t _semaphore;
     pthread_mutex_t _downloadLock;
     dispatch_queue_t _controlQueue;
+    dispatch_semaphore_t _lock;
+    dispatch_semaphore_t _executionLock;
 }
 @synthesize suspended = _suspended;
 
@@ -121,8 +145,8 @@
     if (self = [super init]) {
         _priorityDict = [NSMutableDictionary dictionary];
         _executingRequest = [NSMutableArray array];
-        _lock = [[NSLock alloc] init];
-        _executionLock = [[NSLock alloc] init];
+        _lock = dispatch_semaphore_create(1);
+        _executionLock = dispatch_semaphore_create(1);
         _controlQueue = dispatch_queue_create("ControlQueue", DISPATCH_QUEUE_SERIAL);
         _controlScheduler = [[RACQueueScheduler alloc] initWithName:@"com.courser.control" queue:_controlQueue];
         _downloadScheduler = [[RACQueueScheduler alloc] initWithName:@"com.courser.download" queue:dispatch_queue_create("UGCRequestQueue", DISPATCH_QUEUE_CONCURRENT)];
@@ -145,6 +169,7 @@
 - (RACSubject *)addRequest:(UGCBaseRequest *)request {
     RACSubject *completionSubject = [RACSubject subject];
     request.completionSubject = completionSubject;
+    request.baseLock = [[NSLock alloc] init];
     [self _addRequest:request];
     return request.completionSubject;
 }
@@ -199,16 +224,16 @@
 
 - (void)addExecutingRequest:(UGCBaseRequest *)request {
     if (!request) return;
-    [self.executionLock lock];
+    dispatch_semaphore_wait(self->_executionLock, DISPATCH_TIME_FOREVER);
     [self.executingRequest addObject:request];
-    [self.executionLock unlock];
+    dispatch_semaphore_signal(self->_executionLock);
 }
 
 - (void)removeExecutingRequest:(UGCBaseRequest *)request {
     if (!request) return;
-    [self.executionLock lock];
+    dispatch_semaphore_wait(self->_executionLock, DISPATCH_TIME_FOREVER);
     [self.executingRequest removeObject:request];
-    [self.executionLock unlock];
+    dispatch_semaphore_signal(self->_executionLock);
 }
 
 - (void)saveToRequestDict:(UGCBaseRequest *)request {
@@ -221,9 +246,9 @@
         @strongify(self);
         @strongify(request);
         if (!causedByDealloc && ([[change objectForKey:@"old"] integerValue] != [[change objectForKey:@"new"] integerValue])) {
-            [self.lock lock];
+            dispatch_semaphore_wait(self->_lock, DISPATCH_TIME_FOREVER);
             if (request.criticalState) {
-                [self.lock unlock];
+                dispatch_semaphore_signal(self->_lock);
                 return;
             }
             request.internalQueuePriority = request.queuePriority;
@@ -234,10 +259,10 @@
             }else {
                 [array insertObject:request atIndex:0];
             }
-            [self.lock unlock];
+            dispatch_semaphore_signal(self->_lock);
         }
     }];
-    [self.lock lock];
+    dispatch_semaphore_wait(self->_lock, DISPATCH_TIME_FOREVER);
     NSMutableArray *array = [self.priorityDict objectForKey:@(request.internalQueuePriority)];
     if (self.executionOrder == UGCRequestFIFOExecutionOrder) {
         [array addObject:request];
@@ -245,16 +270,16 @@
         [array insertObject:request atIndex:0];
     }
     request.criticalState = NO;
-    [self.lock unlock];
+    dispatch_semaphore_signal(self->_lock);
 }
 
 - (UGCBaseRequest *)anyRequest {
     UGCBaseRequest *request = nil;
-    [self.lock lock];
+    dispatch_semaphore_wait(self->_lock, DISPATCH_TIME_FOREVER);
     request = [self getFistRequest];
     [self removeRequest:request];
     request.criticalState = YES;
-    [self.lock unlock];
+    dispatch_semaphore_signal(self->_lock);
     return request;
 }
 
