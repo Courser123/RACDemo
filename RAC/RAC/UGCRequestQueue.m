@@ -35,19 +35,10 @@
 @property (nonatomic, assign) BOOL internalFinished;
 @property (nonatomic, assign) UGCRequestQueuePriority internalQueuePriority;
 @property (nonatomic, assign) BOOL criticalState; // 出了存储数组还未进执行数组的临界状态
-@property (nonatomic, strong) NSLock *baseLock;
 
 @end
 
 @implementation UGCBaseRequest (InternalControl)
-
-- (void)setBaseLock:(NSLock *)baseLock {
-    objc_setAssociatedObject(self, "baseLock", baseLock, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
-}
-
-- (NSLock *)baseLock {
-    return objc_getAssociatedObject(self, "baseLock");
-}
 
 - (void)setCompletionSubject:(RACSubject *)completionSubject {
     objc_setAssociatedObject(self, "completionSubject", completionSubject, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
@@ -66,42 +57,27 @@
 }
 
 - (void)setInternalCancelled:(BOOL)internalCancelled {
-    [self.baseLock lock];
     objc_setAssociatedObject(self, "internalCancelled", @(internalCancelled), OBJC_ASSOCIATION_ASSIGN);
-    [self.baseLock unlock];
 }
 
 - (BOOL)internalCancelled {
-    [self.baseLock lock];
-    BOOL cancel = [objc_getAssociatedObject(self, "internalCancelled") boolValue];
-    [self.baseLock unlock];
-    return cancel;
+    return [objc_getAssociatedObject(self, "internalCancelled") boolValue];
 }
 
 - (void)setInternalExecuting:(BOOL)internalExecuting {
-    [self.baseLock lock];
     objc_setAssociatedObject(self, "internalExecuting", @(internalExecuting), OBJC_ASSOCIATION_ASSIGN);
-    [self.baseLock unlock];
 }
 
 - (BOOL)internalExecuting {
-    [self.baseLock lock];
-    BOOL executing = [objc_getAssociatedObject(self, "internalExecuting") boolValue];
-    [self.baseLock unlock];
-    return executing;
+    return [objc_getAssociatedObject(self, "internalExecuting") boolValue];
 }
 
 - (void)setInternalFinished:(BOOL)internalFinished {
-    [self.baseLock lock];
     objc_setAssociatedObject(self, "internalFinished", @(internalFinished), OBJC_ASSOCIATION_ASSIGN);
-    [self.baseLock unlock];
 }
 
 - (BOOL)internalFinished {
-    [self.baseLock lock];
-    BOOL finished = [objc_getAssociatedObject(self, "internalFinished") boolValue];
-    [self.baseLock unlock];
-    return finished;
+    return [objc_getAssociatedObject(self, "internalFinished") boolValue];
 }
 
 - (void)setInternalQueuePriority:(UGCRequestQueuePriority)internalQueuePriority {
@@ -169,7 +145,6 @@
 - (RACSubject *)addRequest:(UGCBaseRequest *)request {
     RACSubject *completionSubject = [RACSubject subject];
     request.completionSubject = completionSubject;
-    request.baseLock = [[NSLock alloc] init];
     [self _addRequest:request];
     return request.completionSubject;
 }
