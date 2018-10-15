@@ -167,7 +167,6 @@
                 RACDisposable *disposabe = [[[request start] execute:request.url] subscribeNext:^(id  _Nullable x) {
                     @strongify(request);
                     [request.completionSubject sendNext:x];
-                    [request.completionSubject sendCompleted];
                 } error:^(NSError * _Nullable error) {
                     @strongify(self);
                     @strongify(request);
@@ -187,6 +186,7 @@
                     if (!request.internalCancelled) {
                         dispatch_semaphore_signal(self->_semaphore);
                     }
+                    [request.completionSubject sendCompleted];
                 }];
                 request.disposable = disposabe;
             }];
